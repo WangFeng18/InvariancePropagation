@@ -19,7 +19,6 @@ from models.resnet_cifar import ResNet50 as ResNet50_cifar
 from models.resnet import resnet18, resnet50
 from models.preact_resnet import PreActResNet18
 from models.preact_resnet import PreActResNet50
-# from models.alexnet_cifar import AlexNet
 from torch.utils.data import DataLoader
 from utils import *
 import objective
@@ -291,7 +290,7 @@ def train(i_epoch, network, criterionA, criterionB, optimizer, dataloader, devic
 			memory_bank.update_points(output.detach(), index)
 
 		lr = optimizer.param_groups[0]['lr']
-		pbar.set_description("Epoch:{} [lr:{}] {:.3f}__{:.3f}".format(i_epoch, lr, ipacc.avg, nnacc.avg))
+		pbar.set_description("Epoch:{} [lr:{}]".format(i_epoch, lr))
 		info = 'L: {:.4f} = L_ins: {:.4f} + {:.3f} * L_inv: {:.4f} + {:.3f} * L_mix: {:.4f}'.format(losses.get(), losses_ins.get(), args.lam_inv * ramp_up(i_epoch), losses_inv.get(), args.lam_mix, losses_mix.get())
 		pbar.set_postfix(info=info)
 
@@ -299,14 +298,10 @@ def train(i_epoch, network, criterionA, criterionB, optimizer, dataloader, devic
 	writer.add_scalar('L_ins', losses_ins.get(), i_epoch)
 	writer.add_scalar('L_inv', losses_inv.get(), i_epoch)
 	writer.add_scalar('L_mix', losses_mix.get(), i_epoch)
-	writer.add_scalar('ipacc', ipacc.avg, i_epoch)
-	writer.add_scalar('nnacc', nnacc.avg, i_epoch)
 	logging.info('Epoch {}: L: {:.4f}'.format(i_epoch, losses.get()))
 	logging.info('Epoch {}: L_ins: {:.4f}'.format(i_epoch, losses_ins.get()))
 	logging.info('Epoch {}: L_inv: {:.4f}'.format(i_epoch, losses_inv.get()))
 	logging.info('Epoch {}: L_mix: {:.4f}'.format(i_epoch, losses_mix.get()))
-	logging.info('Epoch {}: IPacc: {:.4f}'.format(i_epoch, ipacc.avg))
-	logging.info('Epoch {}: NNacc: {:.4f}'.format(i_epoch, nnacc.avg))
 
 def validate(network, memory_bank, val_loader, train_ordered_labels, device):
 	# For validation, for each image, we find the closest neighbor in the
