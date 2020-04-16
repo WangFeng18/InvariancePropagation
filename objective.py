@@ -106,7 +106,7 @@ class NearstNeighbourLoss(object):
 		pass
 
 class InvariancePropagationLoss(nn.Module):
-	def __init__(self, t, n_background=4096, diffusion_layer=3, k=4, n_pos=50, exclusive=True, exclusive_easypos=False, InvP=True, hard_pos=True):
+	def __init__(self, t, n_background=4096, diffusion_layer=3, k=4, n_pos=50, exclusive=True, InvP=True, hard_pos=True):
 		super(InvariancePropagationLoss, self).__init__()
 		self.t = t
 		self.n_background = n_background
@@ -114,7 +114,6 @@ class InvariancePropagationLoss(nn.Module):
 		self.k = k
 		self.n_pos = n_pos
 		self.exclusive = exclusive
-		self.exclusive_easypos = exclusive_easypos
 		self.InvP = InvP
 		self.hard_pos = hard_pos
 		if self.hard_pos == False:
@@ -176,12 +175,7 @@ class InvariancePropagationLoss(nn.Module):
 				hard_pos_sim, hp_indices = pos_sim.topk(k=min(self.n_pos, pos_sim.size(1)), dim=1, largest=True, sorted=True)
 
 			if self.exclusive:	
-				if self.exclusive_easypos:
-					lossB = -( hard_pos_sim.sum(dim=1) / \
-						(background_exclusive_sim - pos_sim.sum(dim=1) + hard_pos_sim.sum(dim=1)) + 1e-7)\
-						.log().mean()
-				else:
-					lossB = -( hard_pos_sim.sum(dim=1) / background_exclusive_sim + 1e-7).log().mean()
+				lossB = -( hard_pos_sim.sum(dim=1) / background_exclusive_sim + 1e-7).log().mean()
 			else:
 				# print('no exclusive')
 				lossB = -( hard_pos_sim.sum(dim=1) / (background_exclusive_sim + self_sim) + 1e-7).log().mean()

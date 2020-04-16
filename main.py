@@ -65,17 +65,11 @@ def main():
 	parser.add_argument('--n_pos', default=50, type=int)
 	# for cifar10 the best n_pos is 20, for cifar 100 the best is 10 or 20
 	parser.add_argument('--exclusive', default=1, type=int)
-	parser.add_argument('--exclusive_easypos', default=0, type=int)
 	parser.add_argument('--nonlinearhead', default=0, type=int)
 	# exclusive best to be 0
 
 	global args
 	args = parser.parse_args()
-	if 'imagenet' in args.dataset:
-		args.weight_decay = 1e-4
-		# args.weight_decay = 1e-6
-	else:
-		args.weight_decay = 5e-4
 	exp_identifier = get_expidentifier(['mix', 'network', 'lam_inv', 'lam_mix', 'diffusion_layer', 'K_nearst', 'n_pos', 'exclusive', 'max_epoch', 'ramp_up', 'nonlinearhead', 't', 'weight_decay'], args)
 	if not args.InvP: exp_identifier = 'hard'
 	args.exp = os.path.join(args.exp, exp_identifier)
@@ -147,7 +141,7 @@ def main():
 	memory_bank = objective.MemoryBank_v1(len(train_dataset), train_ordered_labels, writer, device, m=args.m)
 
 	# create criterion
-	criterionA = objective.InvariancePropagationLoss(args.t, diffusion_layer=args.diffusion_layer, k=args.K_nearst, n_pos=args.n_pos, exclusive=args.exclusive, exclusive_easypos=args.exclusive_easypos, InvP=args.InvP, hard_pos=(not args.not_hardpos))
+	criterionA = objective.InvariancePropagationLoss(args.t, diffusion_layer=args.diffusion_layer, k=args.K_nearst, n_pos=args.n_pos, exclusive=args.exclusive, InvP=args.InvP, hard_pos=(not args.not_hardpos))
 	criterionB = objective.MixPointLoss(args.t)
 	if args.ramp_up == 'binary':
 		ramp_up = lambda i_epoch: objective.BinaryRampUp(i_epoch, 30)
@@ -178,7 +172,7 @@ def main():
 
 	try:
 		for i_epoch in range(start_epoch, args.max_epoch):
-			adjust_learning_rate(args.lr_decay_steps, optimizer, i_epoch, lr_decay_rate=args.lr_decay_rate, cos=args.cos, max_epoch=args.max_epoch)
+			adjust_learning_rate(args.lr, args.lr_decay_steps, optimizer, i_epoch, lr_decay_rate=args.lr_decay_rate, cos=args.cos, max_epoch=args.max_epoch)
 			train(i_epoch, network, criterionA, criterionB, optimizer, train_loader, device, memory_bank, ramp_up)
 
 			save_name = 'checkpoint.pth'
