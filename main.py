@@ -24,32 +24,8 @@ from torch.utils.data import DataLoader
 from utils import *
 import objective
 import logging
-from scipy.special import comb, perm
-from kNN import kNN
 import torch.distributions.beta as beta
 from models.wideresnet import WideResNetInstance
-
-def adjust_learning_rate(lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1):
-	"""Sets the learning rate to the initial LR decayed by 10 every 100 epochs"""
-	#steps = [120,160,200]
-	steps = list(map(int, lr_decay_steps.split(',')))
-	logging.info(steps)
-	lr = args.lr
-	if epoch < steps[0]:
-		lr = args.lr
-	elif epoch >= steps[0] and epoch < steps[1]:
-		lr = args.lr * lr_decay_rate
-	elif epoch >=steps[1] and epoch < steps[2]:
-		lr = args.lr * (lr_decay_rate**2)
-	elif epoch >=steps[2] and epoch < steps[3]:
-		lr = args.lr * (lr_decay_rate**3)
-	elif epoch >=steps[3] and epoch < steps[4]:
-		lr = args.lr * (lr_decay_rate**4)
-	else:
-		lr = args.lr * (lr_decay_rate**5)
-	#lr = args.lr * (0.1 ** (epoch // 100))
-	for param_group in optimizer.param_groups:
-		param_group['lr'] = lr
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -435,25 +411,3 @@ if __name__ == '__main__':
 	main()
 	run_eval_linear(args)
 	#run_semi_supervised(args)
-
-
-
-
-
-# python mixup.py --gpus '0' --max_epoch 200 --lr_decay_steps '160,190,200' --exp '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/' --res_path '/data/HierachicalAggregation_exp/cifar10/record.csv' --dataset 'cifar10' --n_workers 8 --t 0.1 --network 'alexnet_cifar' --mix --diffusion_layer 3 --n_pos 20 --exclusive 0 --pretrain_path '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/[mix=True][network=alexnet_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0]/models/121.pth'
-
-# CUDA_VISIBLE_DEVICES=2 python mixup.py --gpus '0' --exp '/data/HierachicalAggregation_exp/cifar100/InvariancePropagation/' --res_path '/data/HierachicalAggregation_exp/cifar100/record.csv' --dataset 'cifar100' --n_workers 4 --t 0.1 --network 'resnet18_cifar' --mix --n_pos 20 --exclusive 0 --max_epoch 800 --lr_decay_steps '500,750,790'
-
-# python -m downstream.semi_supervised --dataset cifar10 --gpus 0 --exp '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/[mix=True][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=800]/semi_4000' --list 'datasets/lists/cifar_4000.txt' --pretrain_path '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/[mix=True][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=800]/models/best.pth' --network resnet18_cifar
-
-#CUDA_VISIBLE_DEVICES=2,3 python mixup.py --dataset 'imagenet' --gpus '0,1' --network 'resnet50' --exp '/data/HierachicalAggregation_exp/ImageNet/InvariancePropagation_160190' --res_path '/data/HierachicalAggregation_exp/ImageNet/res.txt' --n_workers 32 --n_background 4096 --batch_size 128 --diffusion_layer 3 --lr_decay_steps '160,190,200' --n_pos 20 --max_epoch 240 --nonlinearhead 1
-
-#python mixup.py --gpus '0' --exp '/data/HierachicalAggregation_exp/cifar10/Ablation_EasyPos/' --res_path '/data/HierachicalAggregation_exp/cifar10/record.csv' --dataset 'cifar10' --n_workers 8 --t 0.1 --network 'resnet18_cifar' --mix --not_hardpos --diffusion_layer 3 --n_pos 20 --exclusive 0
-
-#CUDA_VISIBLE_DEVICES=2,3 python mixup.py --dataset 'imagenet' --gpus '0,1' --network 'resnet50' --exp '/data/HierachicalAggregation_exp/ImageNet/InvariancePropagation_160190' --res_path '/data/HierachicalAggregation_exp/ImageNet/res.txt' --n_workers 32 --n_background 4096 --batch_size 128 --diffusion_layer 3 --lr_decay_steps '160,190' --n_pos 50 --max_epoch 200 --nonlinearhead 1 --t 0.2
-# CUDA_VISIBLE_DEVICES=1 python mixup.py --gpus '0' --exp '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/' --res_path '/data/HierachicalAggregation_exp/cifar10/record.csv' --dataset 'cifar10' --t 0.1 --blur --network 'resnet18_cifar' --diffusion_layer 3 --n_pos 20 --exclusive 0 --nonlinearhead 1 --lr 0.015 --pretrain_path '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation/[mix=False][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=200][ramp_up=binary][nonlinearhead=1]/models/checkpoint.pth'
-
-#CUDA_VISIBLE_DEVICES=2 python mixup.py --gpus '0' --exp '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation_lr-3/' --res_path '/data/HierachicalAggregation_exp/cifar10/record.csv' --dataset 'cifar10' --t 0.2 --blur --network 'resnet18_cifar' --diffusion_layer 3 --n_pos 20 --exclusive 0 --nonlinearhead 1 --lr 0.003
-
-#python -m downstream.eval_linear --learning_rate 1.0 --model resnet18_cifar --save_folder '/data/HierachicalAggregation_xp/cifar10/InvariancePropagation_lr-3_t2/[mix=False][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][ax_epoch=800][ramp_up=binary][nonlinearhead=1]/linear' --model_path '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation_lr-3_t2/[mix=False][netwok=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=800][ramp_up=binary][nonlinearhead=1]/models/bestp.th' --dataset cifar10 --gpu 0
-# python -m downstream.eval_linear --learning_rate 1.0 --model resnet18_cifar --save_folder '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation_lr-3_t2/[mix=False][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=800][ramp_up=binary][nonlinearhead=0]/linear' --model_path '/data/HierachicalAggregation_exp/cifar10/InvariancePropagation_lr-3_t2/[mix=False][network=resnet18_cifar][lam_inv=0.6][lam_mix=1.0][diffusion_layer=3][K_nearst=4][n_pos=20][exclusive=0][max_epoch=800][ramp_up=binary][nonlinearhead=0]/models/best.pth' --dataset cifar10 --gpu 0

@@ -203,3 +203,14 @@ class AverageMeter(object):
 		self.sum += val * n
 		self.count += n
 		self.avg = self.sum / float(self.count)
+
+
+
+def adjust_learning_rate(lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1):
+	"""Decay the learning rate based on schedule"""
+	steps = list(map(int, lr_decay_steps.split(',')))
+	lr = args.lr
+	for milestone in steps:
+		lr *= lr_decay_rate if epoch >= milestone else 1.
+	for param_group in optimizer.param_groups:
+		param_group['lr'] = lr
