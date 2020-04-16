@@ -50,28 +50,16 @@ class GaussianBlur(object):
 		x = x.filter(ImageFilter.GaussianBlur(radius=sigma))
 		return x
 
-class RandomBlur(object):
-	def __call__(self, pic):
-		p = np.random.rand()
-		sigma = np.random.rand()*1.9 + 0.1
-		pic = np.array(pic)
-		if p < 0.5:
-			pic = cv2.GaussianBlur(pic, (23,23), sigmaX=sigma, sigmaY=sigma)
-			return pic
-		else:
-			return pic
-
-	def __repr__(self):
-		return 'Blur'
-
 def get_instance_dataloader(args):
 	minimum_crop = 0.2
 	logging.info(colorful('ResizedCrop from {} to 1'.format(minimum_crop)))
 	if args.blur:
 		train_transforms = transforms.Compose([
 				transforms.RandomResizedCrop(224, scale=(minimum_crop, 1.)),
+				transforms.RandomApply([
+					transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)  # not strengthened
+				], p=0.8),
 				transforms.RandomGrayscale(p=0.2),
-				transforms.ColorJitter(0.4, 0.4, 0.4, 0.4),
 				transforms.RandomApply([GaussianBlur([.1, 2.])], p=0.5),
 				transforms.RandomHorizontalFlip(),
 				transforms.ToTensor(),

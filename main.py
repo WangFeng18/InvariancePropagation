@@ -50,6 +50,7 @@ def main():
 	parser.add_argument('--m', default=0.5, type=float)
 	parser.add_argument('--dropout', action='store_true')
 	parser.add_argument('--blur', action='store_true')
+	parser.add_argument('--cos', action='store_true')
 
 	parser.add_argument('--network', default='resnet18', type=str)
 	parser.add_argument('--mix', action='store_true')
@@ -58,7 +59,7 @@ def main():
 	parser.add_argument('--ramp_up', default='binary', type=str)
 	parser.add_argument('--lam_inv', default=0.6, type=float)
 	parser.add_argument('--lam_mix', default=1.0, type=float)
-	parser.add_argument('--diffusion_layer', default=4, type=int)
+	parser.add_argument('--diffusion_layer', default=3, type=int)
 	# for cifar 10 the best diffusion_layer is 3 and cifar 100 is 4
 	# for imagenet I have only tested when diffusion_layer = 3
 	parser.add_argument('--K_nearst', default=4, type=int)
@@ -178,8 +179,7 @@ def main():
 
 	try:
 		for i_epoch in range(start_epoch, args.max_epoch):
-			# memory_bank.cluster_points(args.n_clusters)
-			adjust_learning_rate(args.lr_decay_steps, optimizer, i_epoch, lr_decay_rate=args.lr_decay_rate)
+			adjust_learning_rate(args.lr_decay_steps, optimizer, i_epoch, lr_decay_rate=args.lr_decay_rate, cos=args.cos, max_epoch=args.max_epoch)
 			train(i_epoch, network, criterionA, criterionB, optimizer, train_loader, device, memory_bank, ramp_up)
 
 			save_name = 'checkpoint.pth'

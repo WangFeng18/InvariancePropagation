@@ -2,6 +2,7 @@ from __future__ import division
 import torch
 import numpy as np
 import os
+import math
 import argparse
 import logging
 from collections import OrderedDict
@@ -206,11 +207,14 @@ class AverageMeter(object):
 
 
 
-def adjust_learning_rate(lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1):
+def adjust_learning_rate(lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1, cos=False, max_epoch=800):
 	"""Decay the learning rate based on schedule"""
-	steps = list(map(int, lr_decay_steps.split(',')))
 	lr = args.lr
-	for milestone in steps:
-		lr *= lr_decay_rate if epoch >= milestone else 1.
+	if cos:
+		lr *= 0.5 * (1. + math.cos(math.pi * epoch / max_epoch))
+	else:
+		steps = list(map(int, lr_decay_steps.split(',')))
+		for milestone in steps:
+			lr *= lr_decay_rate if epoch >= milestone else 1.
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
