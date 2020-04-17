@@ -41,7 +41,7 @@ def main():
 	parser.add_argument('--dataset', default='imagenet', type=str)
 	parser.add_argument('--lr', default=0.03, type=float)
 	parser.add_argument('--lr_decay_rate', default=0.1, type=float)
-	parser.add_argument('--batch_size', default=256, type=int)
+	parser.add_argument('--batch_size', default=128, type=int)
 	parser.add_argument('--weight_decay', default=5e-4, type=float)
 	parser.add_argument('--n_workers', default=32, type=int)
 	parser.add_argument('--n_background', default=4096, type=int)
