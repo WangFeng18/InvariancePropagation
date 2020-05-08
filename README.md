@@ -1,7 +1,10 @@
 # Unsupervised Learning by Invariance Propagation
 
 This repository is the official implementation of [Unsupervised Learning by Invariance Propagation](https://arxiv.org/abs/---). 
-![concept](img/concept.jpg)
+<!-- ![concept](./concept.jpg) -->
+<p align="center">
+  <img src="img/concept.png" width="300">
+</p>
 <!-- > 📋Optional: include a graphic explaining your approach/main result, bibtex entry, link to demos, blog posts and tutorials -->
 ## Requirements
 
