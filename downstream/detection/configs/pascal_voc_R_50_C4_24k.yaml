@@ -11,6 +11,6 @@ DATASETS:
   TRAIN: ('voc_2007_trainval', 'voc_2012_trainval')
   TEST: ('voc_2007_test',)
 SOLVER:
-  STEPS: (18000, 22000)
-  MAX_ITER: 24000
-  WARMUP_ITERS: 100
+  STEPS: (72000, 88000)
+  MAX_ITER: 96000
+  WARMUP_ITERS: 400

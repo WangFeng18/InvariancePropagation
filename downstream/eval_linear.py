@@ -87,8 +87,8 @@ def parse_option():
 	parser.add_argument('--layer', type=int, default=6, help='which layer to evaluate')
 
 	# crop
-	parser.add_argument('--crop', type=float, default=0.2, help='minimum crop')
-	parser.add_argument('--dataset', type=str, default='imagenet100')
+	parser.add_argument('--crop', type=float, default=0.08, help='minimum crop')
+	parser.add_argument('--dataset', type=str, default='imagenet')
 	parser.add_argument('--resume', default='', type=str, metavar='PATH')
 	parser.add_argument('--aug', type=str, default='CJ', choices=['NULL', 'CJ'])
 	parser.add_argument('--bn', action='store_true', help='use parameter-free BN')
