@@ -4,6 +4,9 @@ import torch.backends.cudnn as cudnn
 import datasets.cifar as cifar
 import datasets.stanford_cars as cars
 import datasets.caltech101 as caltech101
+import datasets.cub200 as cub200
+import datasets.pets as pets
+import datasets.flowers as flowers
 import logging
 import torch.nn as nn
 import torchvision
@@ -93,24 +96,26 @@ class FineTune(object):
 				# scheduler.step()
 				adjust_learning_rate(self.args.lr_decay_steps, self.cls_optimizer, i_epoch, self.args.lr*5)
 				adjust_learning_rate(self.args.lr_decay_steps, self.optimizer, i_epoch, self.args.lr)
-				acc, mpca = self.validate(i_epoch)
-				if acc >= best_acc:
-					best_acc = acc
-					torch.save(checkpoint, os.path.join(self.args.exp, 'models', 'best.pth'))
-				if mpca >= best_mpca:
-					best_mpca = mpca
 				if i_epoch in [30, 60, 120, 160, 200, 400, 600]:
 					torch.save(checkpoint, os.path.join(self.args.exp, 'models', '{}.pth'.format(i_epoch+1)))
 
-				self.args.y_best_acc = best_acc
-				logging.info(colorful('[Epoch: {}] best acc: {:.4f}'.format(i_epoch, best_acc)))
-				logging.info(colorful('[Epoch: {}] best mpca: {:.4f}'.format(i_epoch, best_mpca)))
-				self.writer.add_scalar('acc', acc, i_epoch+1)
+				if i_epoch % self.args.n_val == 0:
+					acc, mpca = self.validate(i_epoch)
+					if acc >= best_acc:
+						best_acc = acc
+						torch.save(checkpoint, os.path.join(self.args.exp, 'models', 'best.pth'))
+					if mpca >= best_mpca:
+						best_mpca = mpca
 
-				with torch.no_grad():
-					for name, param in self.network.named_parameters():
-						if 'bn' not in name:
-							self.writer.add_histogram(name, param, i_epoch)
+					self.args.y_best_acc = best_acc
+					logging.info(colorful('[Epoch: {}] best acc: {:.4f}'.format(i_epoch, best_acc)))
+					logging.info(colorful('[Epoch: {}] best mpca: {:.4f}'.format(i_epoch, best_mpca)))
+					self.writer.add_scalar('acc', acc, i_epoch+1)
+
+				# with torch.no_grad():
+					# for name, param in self.network.named_parameters():
+						# if 'bn' not in name:
+							# self.writer.add_histogram(name, param, i_epoch)
 
 				# cluster
 		except KeyboardInterrupt as e:
@@ -137,10 +142,22 @@ class FineTune(object):
 	def get_dataloader(self):
 		if self.args.dataset == 'car':
 			self.train_loader, self.val_loader = cars.get_finetune_dataloader(self.args)
+			self.args.n_cls = 196
 		elif self.args.dataset == 'caltech101':
 			self.train_loader, self.val_loader = caltech101.get_finetune_dataloader(self.args)
+			self.args.n_cls = 101
+		elif self.args.dataset == 'cub200':
+			self.train_loader, self.val_loader = cub200.get_finetune_dataloader(self.args)
+			self.args.n_cls = 200
+		elif self.args.dataset == 'pets':
+			self.train_loader, self.val_loader = pets.get_finetune_dataloader(self.args)
+			self.args.n_cls = 37
+		elif self.args.dataset == 'flowers':
+			self.train_loader, self.val_loader = flowers.get_finetune_dataloader(self.args)
+			self.args.n_cls = 102
 		elif self.args.dataset == 'cifar10' or self.args.dataset == 'cifar100':
 			self.train_loader, self.val_loader = cifar.get_finetune_dataloader(self.args)
+			self.args.n_cls = 10 if self.args.dataset=='cifar10' else 100
 		else:
 			raise NotImplementedError
 
@@ -156,7 +173,15 @@ class FineTune(object):
 		self.network = nn.DataParallel(self.network, device_ids=self.device_ids)
 		self.network.to(self.device)
 		ckpt = torch.load(self.args.pretrain_path)
-		self.network.load_state_dict(ckpt['state_dict'])
+		# self.network.load_state_dict(ckpt['state_dict'])
+		state_dict = ckpt['state_dict']
+		valid_state_dict = {k: v for k, v in state_dict.items() if k in self.network.state_dict() and 'fc.' not in k}
+		for k,v in self.network.state_dict().items():
+			if k not in valid_state_dict:
+				logging.info('{}: Random Init'.format(k))
+				valid_state_dict[k] = v
+		# logging.info(valid_state_dict.keys())
+		self.network.load_state_dict(valid_state_dict)
 
 		if self.args.fc_only: 
 			for param in self.network.parameters():
@@ -250,6 +275,7 @@ if __name__ == '__main__':
 	parser.add_argument('--resume_path', default='', type=str)
 	parser.add_argument('--pretrain_path', default='', type=str)
 	parser.add_argument('--n_cls', default=196, type=int)
+	parser.add_argument('--n_val', default=10, type=int)
 
 	parser.add_argument('--lr', default=0.01, type=float)
 	parser.add_argument('--batch_size', default=128, type=int)

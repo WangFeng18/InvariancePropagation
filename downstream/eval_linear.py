@@ -33,6 +33,7 @@ from PIL import ImageFile
 import datasets.cifar as cifar
 import datasets.svhn as svhn
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+from datasets.ImageList import ImageList
 
 def adjust_learning_rate(epoch, opt, optimizer):
 	"""Sets the learning rate to the initial LR decayed by 0.2 every steep step"""
@@ -122,6 +123,8 @@ def parse_option():
 
 	if opt.dataset == 'imagenet100':
 		opt.n_label = 100
+	if opt.dataset == 'places':
+		opt.n_label = 205
 	if opt.dataset == 'imagenet':
 		opt.n_label = 1000
 	if opt.dataset == 'cifar10':
@@ -150,7 +153,7 @@ def main():
 
 
 	logger = getLogger(args.save_folder)
-	if args.dataset.startswith('imagenet'):
+	if args.dataset.startswith('imagenet') or args.dataset.startswith('places'):
 		image_size = 224
 		crop_padding = 32
 		mean = [0.485, 0.456, 0.406]
@@ -174,17 +177,23 @@ def main():
 			])
 		else:
 			raise NotImplemented('augmentation not supported: {}'.format(args.aug))
-
-		train_dataset = datasets.ImageFolder(train_folder, train_transform)
-		val_dataset = datasets.ImageFolder(
-			val_folder,
-			transforms.Compose([
+		
+		val_transform = transforms.Compose([
 				transforms.Resize(image_size + crop_padding),
 				transforms.CenterCrop(image_size),
 				transforms.ToTensor(),
 				normalize,
 			])
-		)
+		if args.dataset.startswith('imagenet'):
+			train_dataset = datasets.ImageFolder(train_folder, train_transform)
+			val_dataset = datasets.ImageFolder(
+				val_folder,
+				val_transform,
+			)
+
+		if args.dataset.startswith('places'):
+			train_dataset = ImageList('/data/trainvalsplit_places205/train_places205.csv', '/data/data/vision/torralba/deeplearning/images256', transform=train_transform, symbol_split=' ')
+			val_dataset = ImageList('/data/trainvalsplit_places205/val_places205.csv', '/data/data/vision/torralba/deeplearning/images256', transform=val_transform, symbol_split=' ')
 
 		print(len(train_dataset))
 		train_sampler = None
@@ -211,7 +220,7 @@ def main():
 		model = nn.DataParallel(model)
 		classifier = LinearClassifierAlexNet(args.layer, args.n_label, 'avg', cifar=True)
 	elif args.model == 'resnet50':
-		model = resnet50()
+		model = resnet50(non_linear_head=True)
 		model = nn.DataParallel(model)
 		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 1)
 	elif args.model == 'resnet18':

@@ -31,7 +31,8 @@ python main.py --exp 'your_exp_folder_path' --dataset 'svhn' --weight_decay 5e-4
 
 ### ImageNet
 ```train
-python main.py --exp 'your_exp_folder_path' --dataset 'imagenet' --weight_decay 1e-4 --t 0.07 --network 'resnet50'
+<!-- python main.py --exp 'your_exp_folder_path' --dataset 'imagenet' --weight_decay 1e-4 --t 0.07 --network 'resnet50' -->
+python main.py --exp your_folder --res_path your_result_folder --batch_size 128 --blur --network 'resnet50' --diffusion_layer 3 --nonlinearhead 1 --t 0.2 --n_background 65536 --weight_decay 1e-4 --max_epoch 1000 --lr_decay_step '400,600,750,800,1000'  --lr 0.015
 ```
 
 Note that we do not use mixcontrast augmentations in ImageNet due to it will slow down the training process.

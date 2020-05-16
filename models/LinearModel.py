@@ -89,7 +89,7 @@ class LinearClassifierResNet(nn.Module):
 			raise NotImplementedError('layer not supported: {}'.format(layer))
 
 		self.classifier = nn.Sequential()
-		if layer < 5:
+		if layer <= 5:
 			if pool == 'max':
 				self.classifier.add_module('MaxPool', nn.AdaptiveMaxPool2d((pool_size, pool_size)))
 			elif pool == 'avg':
