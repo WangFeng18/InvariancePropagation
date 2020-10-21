@@ -63,7 +63,6 @@ def main():
 	# for cifar10 the best n_pos is 20, for cifar 100 the best is 10 or 20
 	parser.add_argument('--exclusive', default=1, type=int)
 	parser.add_argument('--nonlinearhead', default=0, type=int)
-	# exclusive best to be 0
 
 	global args
 	args = parser.parse_args()
@@ -130,7 +129,7 @@ def main():
 	memory_bank = objective.MemoryBank_v1(len(train_dataset), train_ordered_labels, writer, device, m=args.m)
 
 	# create criterion
-	criterionA = objective.InvariancePropagationLoss(args.t, diffusion_layer=args.diffusion_layer, k=args.K_nearst, n_pos=args.n_pos, exclusive=args.exclusive, InvP=args.InvP, hard_pos=(not args.not_hardpos))
+	criterionA = objective.InvariancePropagationLoss(args.t, n_background=args.n_background, diffusion_layer=args.diffusion_layer, k=args.K_nearst, n_pos=args.n_pos, exclusive=args.exclusive, InvP=args.InvP, hard_pos=(not args.not_hardpos))
 
 	if args.ramp_up == 'binary':
 		ramp_up = lambda i_epoch: objective.BinaryRampUp(i_epoch, 30)
