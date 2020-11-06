@@ -1,6 +1,6 @@
 # Unsupervised Learning by Invariance Propagation
 
-This repository is the official implementation of [Unsupervised Learning by Invariance Propagation](https://arxiv.org/abs/---). 
+This repository is the official implementation of [Unsupervised Learning by Invariance Propagation](https://arxiv.org/abs/2010.11694). 
 
 ## Model Training
 To train the model(s) in the paper, run this command:
