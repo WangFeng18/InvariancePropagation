@@ -7,7 +7,7 @@ To train the model(s) in the paper, run this command:
 
 ### ImageNet
 ```train
-python main.py --exp 'your_path' --n_background 4096 --t 0.2 --blur --cos --network 'resnet50' --nonlinearhead 1
+python main.py --exp 'your_path' --n_background 4096 --t 0.2 --blur --cos --network 'resnet50' --nonlinearhead 1 --weight_decay 1e-4
 ```
 
 ## Evaluation
