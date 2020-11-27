@@ -99,7 +99,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
 
-	def __init__(self, block, layers, low_dim=128, in_channel=3, width=1, non_linear_head=False):
+	def __init__(self, block, layers, low_dim=128, in_channel=3, width=1, non_linear_head=False, mlpbn=False):
 		self.inplanes = 64
 		super(ResNet, self).__init__()
 		self.conv1 = nn.Conv2d(in_channel, 64, kernel_size=7, stride=2, padding=3,
@@ -120,11 +120,19 @@ class ResNet(nn.Module):
 			self.fc = nn.Linear(self.base * 8 * block.expansion, low_dim)
 		else:
 			logging.info(colorful('Using Non Linear Head'))
-			self.fc = nn.Sequential(
-						nn.Linear(self.base * 8 * block.expansion, 2048),
-						nn.ReLU(inplace=True),
-						nn.Linear(2048, low_dim),
-			)
+			if mlpbn:
+				self.fc = nn.Sequential(
+							nn.Linear(self.base * 8 * block.expansion, self.base * 8 * block.expansion),
+							nn.BatchNorm1d(self.base * 8 * block.expansion),
+							nn.ReLU(inplace=True),
+							nn.Linear(self.base * 8 * block.expansion, low_dim),
+				)
+			else:
+				self.fc = nn.Sequential(
+							nn.Linear(self.base * 8 * block.expansion, self.base * 8 * block.expansion),
+							nn.ReLU(inplace=True),
+							nn.Linear(self.base * 8 * block.expansion, low_dim),
+				)
 
 
 		for m in self.modules():
@@ -162,7 +170,9 @@ class ResNet(nn.Module):
 
 		return nn.Sequential(*layers)
 
-	def forward(self, x, layer=7):
+	def forward(self, x, layer=7, all_blocks=False):
+		if all_blocks:
+			return self.forward_convs(x)
 		if layer <= 0:
 			return x
 		x = self.conv1(x)
@@ -191,6 +201,28 @@ class ResNet(nn.Module):
 
 		return x
 
+	def forward_convs(self, x):
+		feats = []
+		x = self.conv1(x)
+		x = self.bn1(x)
+		x = self.relu(x)
+		x = self.maxpool(x)
+		feats.append(x)
+
+		for block in self.layer1:
+			x = block(x)
+			feats.append(x)
+		for block in self.layer2:
+			x = block(x)
+			feats.append(x)
+		for block in self.layer3:
+			x = block(x)
+			feats.append(x)
+		for block in self.layer4:
+			x = block(x)
+			feats.append(x)
+
+		return feats
 
 def resnet18(pretrained=False, **kwargs):
 	"""Constructs a ResNet-18 model.

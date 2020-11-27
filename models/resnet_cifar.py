@@ -69,7 +69,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-	def __init__(self, block, num_blocks, low_dim=128, dropout=False, non_linear_head=False):
+	def __init__(self, block, num_blocks, low_dim=128, dropout=False, non_linear_head=False, mlpbn=False):
 		super(ResNet, self).__init__()
 		self.in_planes = 64
 		self.dropout = dropout
@@ -85,11 +85,19 @@ class ResNet(nn.Module):
 			self.linear = nn.Linear(512 * block.expansion, low_dim)
 		else:
 			logging.info(colorful('Using Non Linear Head'))
-			self.linear = nn.Sequential(
-						nn.Linear(512 * block.expansion, 512),
+			if mlpbn:
+				self.linear = nn.Sequential(
+						nn.Linear(512 * block.expansion, 512 * block.expansion),
+						nn.BatchNorm1d(512 * block.expansion),
 						nn.ReLU(inplace=True),
-						nn.Linear(512, low_dim),
-			)
+						nn.Linear(512 * block.expansion, low_dim),
+				)
+			else:
+				self.linear = nn.Sequential(
+							nn.Linear(512 * block.expansion, 512 * block.expansion),
+							nn.ReLU(inplace=True),
+							nn.Linear(512 * block.expansion, low_dim),
+				)
 
 
 		if self.dropout:

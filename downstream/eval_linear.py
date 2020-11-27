@@ -19,7 +19,7 @@ import numpy as np
 from tqdm import tqdm
 from utils import getLogger, colorful
 import logging
-
+from models.shufflenetv2 import shufflenet_v2_x1_0
 import tensorboard_logger as tb_logger
 
 from torchvision import transforms, datasets
@@ -27,6 +27,7 @@ from torchvision import transforms, datasets
 from models.preact_resnet import PreActResNet18, PreActResNet50
 from models.resnet import resnet50, resnet18
 from models.resnet_cifar import ResNet18 as resnet18_cifar
+from models.resnet_cifar import ResNet50 as resnet50_cifar
 from models.alexnet import AlexNet, AlexNet_cifar
 from models.LinearModel import LinearClassifierResNet, LinearClassifierAlexNet
 from PIL import ImageFile
@@ -93,6 +94,7 @@ def parse_option():
 	parser.add_argument('--resume', default='', type=str, metavar='PATH')
 	parser.add_argument('--aug', type=str, default='CJ', choices=['NULL', 'CJ'])
 	parser.add_argument('--bn', action='store_true', help='use parameter-free BN')
+	parser.add_argument('--moco', action='store_true', help='if using moco models')
 	parser.add_argument('--adam', action='store_true', help='use adam optimizer')
 	parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
 	opt = parser.parse_args()
@@ -220,7 +222,7 @@ def main():
 		model = nn.DataParallel(model)
 		classifier = LinearClassifierAlexNet(args.layer, args.n_label, 'avg', cifar=True)
 	elif args.model == 'resnet50':
-		model = resnet50(non_linear_head=True)
+		model = resnet50(non_linear_head=False)
 		model = nn.DataParallel(model)
 		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 1)
 	elif args.model == 'resnet18':
@@ -231,18 +233,40 @@ def main():
 		model = resnet18_cifar()
 		model = nn.DataParallel(model)
 		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 1, bottleneck=False)
+	elif args.model == 'resnet50_cifar':
+		model = resnet50_cifar()
+		model = nn.DataParallel(model)
+		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 1)
 	elif args.model == 'resnet50x2':
 		model = InsResNet50(width=2)
 		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 2)
 	elif args.model == 'resnet50x4':
 		model = InsResNet50(width=4)
 		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 4)
+	elif args.model == 'shufflenet':
+		model = shufflenet_v2_x1_0(num_classes=128, non_linear_head=False)
+		model = nn.DataParallel(model)
+		classifier = LinearClassifierResNet(args.layer, args.n_label, 'avg', 0.5)
 	else:
 		raise NotImplementedError('model not supported {}'.format(args.model))
 
 	print('==> loading pre-trained model')
 	ckpt = torch.load(args.model_path)
-	model.load_state_dict(ckpt['state_dict'])
+	if not args.moco:
+		model.load_state_dict(ckpt['state_dict'])
+	else:
+		try:
+			state_dict = ckpt['state_dict']
+			for k in list(state_dict.keys()):
+				# retain only encoder_q up to before the embedding layer
+				if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
+					# remove prefix
+					state_dict['module.'+k[len("module.encoder_q."):]] = state_dict[k]
+				# delete renamed or unused k
+				del state_dict[k]
+			model.load_state_dict(state_dict)
+		except:
+			pass
 	print("==> loaded checkpoint '{}' (epoch {})".format(args.model_path, ckpt['epoch']))
 	print('==> done')
 

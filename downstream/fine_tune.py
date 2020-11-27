@@ -204,7 +204,7 @@ class FineTune(object):
 		)
 		self.cls_optimizer = torch.optim.SGD(
 			self.classifier.parameters(),
-			lr = 5 * args.lr,
+			lr = 50 * args.lr,
 			momentum=0.9,
 			weight_decay=args.weight_decay,
 		)
@@ -269,15 +269,15 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--dataset', default='car', type=str)
 	parser.add_argument('--gpus', default='0,1', type=str)
-	parser.add_argument('--max_epoch', default=200, type=int)
-	parser.add_argument('--lr_decay_steps', default='160,190,200', type=str)
+	parser.add_argument('--max_epoch', default=81, type=int)
+	parser.add_argument('--lr_decay_steps', default='50,70,80', type=str)
 	parser.add_argument('--exp', default='', type=str)
 	parser.add_argument('--resume_path', default='', type=str)
 	parser.add_argument('--pretrain_path', default='', type=str)
 	parser.add_argument('--n_cls', default=196, type=int)
-	parser.add_argument('--n_val', default=10, type=int)
+	parser.add_argument('--n_val', default=5, type=int)
 
-	parser.add_argument('--lr', default=0.01, type=float)
+	parser.add_argument('--lr', default=0.001, type=float)
 	parser.add_argument('--batch_size', default=128, type=int)
 	parser.add_argument('--weight_decay', default=1e-6, type=float)
 	parser.add_argument('--n_workers', default=32, type=int)

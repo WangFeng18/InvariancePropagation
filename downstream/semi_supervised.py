@@ -59,12 +59,12 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--stage', default='train', type=str)
 	parser.add_argument('--dataset', default='imagenet', type=str)
-	parser.add_argument('--lr', default=0.006, type=float)
-	parser.add_argument('--batch_size', default=256, type=int)
+	parser.add_argument('--lr', default=0.0012, type=float)
+	parser.add_argument('--batch_size', default=128, type=int)
 	parser.add_argument('--gpus', default='0,1,2,3', type=str)
 	parser.add_argument('--weight_decay', default=1e-5, type=float)
-	parser.add_argument('--max_epoch', default=71, type=int)
-	parser.add_argument('--lr_decay_steps', default='30,60,70', type=str)
+	parser.add_argument('--max_epoch', default=30, type=int)
+	parser.add_argument('--lr_decay_steps', default='15,20,25', type=str)
 	parser.add_argument('--exp', default='', type=str)
 	parser.add_argument('--list', default='', type=str)
 	parser.add_argument('--resume_path', default='', type=str)
@@ -125,7 +125,7 @@ def main():
 
 	cls_optimizer = torch.optim.SGD(
 		classifier.parameters(),
-		lr=args.lr*10,
+		lr=args.lr*50,
 		momentum=0.9,
 		weight_decay=args.weight_decay,
 	)
@@ -169,7 +169,7 @@ def main():
 			}
 			torch.save(checkpoint, os.path.join(args.exp, 'models', 'checkpoint.pth'))
 			adjust_learning_rate(args.lr_decay_steps, optimizer, i_epoch)
-			if i_epoch % 10 == 0:
+			if i_epoch % 2 == 0:
 				acc1, acc5 = validate(i_epoch, network, classifier, val_loader, device)
 				if acc1 >= best_acc:
 					best_acc = acc1

@@ -30,7 +30,8 @@ for path in DIR_LIST:
 		break
 
 DIR_LIST = ['/home/user/ILSVRC2012_100/',
-			'/home/real/ILSVRC2012_100/']
+			'/home/real/ILSVRC2012_100/',
+			'/data/ILSVRC2012_100/']
 
 for path in DIR_LIST:
 	if os.path.exists(path):

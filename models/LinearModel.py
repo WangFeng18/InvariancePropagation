@@ -87,7 +87,7 @@ class LinearClassifierResNet(nn.Module):
 			pool = pool_type
 		else:
 			raise NotImplementedError('layer not supported: {}'.format(layer))
-
+		nChannels = int(nChannels)
 		self.classifier = nn.Sequential()
 		if layer <= 5:
 			if pool == 'max':

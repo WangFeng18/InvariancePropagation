@@ -12,7 +12,6 @@ import multiprocessing
 
 DEFAULT_KMEANS_SEED = 1234
 
-
 def GaussianRampUp(i_epoch, end_epoch, weight=5):
 	m = max(1-i_epoch/end_epoch, 0)**2
 	v = np.exp(-weight * m)
@@ -67,6 +66,92 @@ class MixPointLoss(nn.Module):
 		# Z = 2876934.2 / 1281167 * self.data_len
 		return torch.exp(dot_prods / self.t)
 
+class RatioLoss(nn.Module):
+	def __init__(self, t):
+		super(RatioLoss, self).__init__()
+		self.t = t
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
+		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
+		negative_sim = points_sim.sum(dim=1) - positive_sim
+		return -(positive_sim/negative_sim + 1e-7).log().mean(), similarities
+
+	def _exp(self, dot_prods):
+		# Z = 2876934.2 / 1281167 * self.data_len
+		return torch.exp(dot_prods / self.t)
+
+def calculate_entropy(similarities, point_indices, t):
+	F = torch.exp(similarities/t.unsqueeze(dim=1))
+	F[list(range(F.size(0))), point_indices] = 0
+	r = F/F.sum(dim=1, keepdim=True)
+	entropy = -(r * (r + 1e-7).log()).sum(dim=1)
+	return entropy
+
+def binary_search_entropy(similarities, target_entropy, point_indices, iterations=13):
+	left = 0.0
+	right = 10.0
+	scale = (right - left) / 4.0
+	vcenter = (right + left) / 2.0
+	centers = torch.ones(similarities.size(0), device=similarities.device) * vcenter
+	# scale = 0.25
+	# centers = torch.ones(similarities.size(0), device=similarities.device) * 0.5
+
+	for i_iteration in range(iterations):
+		#exps = torch.exp(similarities/centers.unsqueeze(dim=1))
+		#distribution = exps / exps.sum(dim=1, keepdim=True)
+		entropy = calculate_entropy(similarities, point_indices, centers)
+
+		indication = 2*(entropy < target_entropy) - 1.0
+		centers = centers + scale * indication
+		scale = scale / 2.0
+
+	distribution = torch.nn.functional.softmax(similarities/centers.unsqueeze(dim=1))
+	entropy = calculate_entropy(similarities, point_indices, centers)
+
+	return distribution, centers, entropy
+
+class FixedEntropyPointLoss(nn.Module):
+	def __init__(self, target_entropy):
+		super(FixedEntropyPointLoss, self).__init__()
+		self.target_entropy = target_entropy
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+
+		distribution, centers, entropy = binary_search_entropy(similarities, self.target_entropy, point_indices)
+		positive_probability = distribution[list(range(distribution.size(0))), point_indices]
+		loss = -(positive_probability + 1e-7).log().mean()
+
+		return loss, similarities, centers.mean().item(), entropy.mean().item()
+
+class FixedEntropyHardNegativeLoss(nn.Module):
+	def __init__(self, target_entropy, n_background=4096):
+		super(FixedEntropyHardNegativeLoss, self).__init__()
+		self.target_entropy = target_entropy
+		self.n_background = n_background
+
+	def forward(self, points, point_indices, memory_bank, target_centers=None):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		hard_similarities, hn_indices = similarities.topk(k=self.n_background, dim=1, largest=True, sorted=True)
+
+		_, centers, entropy = binary_search_entropy(hard_similarities, self.target_entropy, point_indices)
+
+		positive_similarities = similarities[list(range(similarities.size(0))), point_indices]
+
+		if target_centers is not None:
+			centers = torch.ones(similarities.size(0), device=similarities.device) * target_centers
+			
+		condition_p = torch.exp(positive_similarities/centers - 1.0/centers) / torch.exp(hard_similarities/centers.unsqueeze(dim=1) - 1.0/centers.unsqueeze(dim=1)).sum(dim=1)
+
+		loss = - (condition_p + 1e-7).log().mean()
+
+		return loss, similarities, centers.mean().item(), entropy.mean().item()
+
 class PointLoss(nn.Module):
 	def __init__(self, t):
 		super(PointLoss, self).__init__()
@@ -74,26 +159,136 @@ class PointLoss(nn.Module):
 
 	def forward(self, points, point_indices, memory_bank):
 		norm_points = l2_normalize(points)
-		points_sim = self._exp(memory_bank.get_all_dot_products(norm_points))
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
 		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
-		return -(positive_sim/points_sim.sum(dim=1) + 1e-7).log().mean()
+		return -(positive_sim/points_sim.sum(dim=1) + 1e-7).log().mean(), similarities
+
+	def _exp(self, dot_prods):
+		# Z = 2876934.2 / 1281167 * self.data_len
+		return torch.exp(dot_prods / self.t)
+
+class SingleLoss(nn.Module):
+	def __init__(self):
+		super(SingleLoss, self).__init__()
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		positive_sim = similarities[list(range(similarities.size(0))), point_indices]
+		maximum, _ = similarities.max(dim=1)
+		loss = (maximum - positive_sim).mean()
+
+		return loss, similarities
+
+class FlatLoss(nn.Module):
+	def __init__(self):
+		super(FlatLoss, self).__init__()
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		positive_sim = similarities[list(range(similarities.size(0))), point_indices]
+		N = float(similarities.size(1))
+		loss = (- positive_sim + 1/N * similarities.sum(dim=1)).mean()
+		return loss, similarities
+
+class HardFlatLoss(nn.Module):
+	def __init__(self, n_background):
+		super(HardFlatLoss, self).__init__()
+		self.n_background = n_background
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = similarities
+		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
+		hard_negatives_sim, hn_indices = points_sim.topk(k=self.n_background, dim=1, largest=True, sorted=True)
+
+		N = float(hard_negatives_sim.size(1))
+		loss = (- positive_sim + 1/N * hard_negatives_sim.sum(dim=1)).mean()
+		return loss, similarities
+
+class OraclePointLoss(nn.Module):
+	def __init__(self, t):
+		super(OraclePointLoss, self).__init__()
+		self.t = t
+
+	def forward(self, points, point_indices, index, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
+		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
+		return -(positive_sim/points_sim.sum(dim=1) + 1e-7).log().mean(), similarities
+
+	def _exp(self, dot_prods):
+		# Z = 2876934.2 / 1281167 * self.data_len
+		return torch.exp(dot_prods / self.t)
+
+class RingLoss(nn.Module):
+	def __init__(self, t, n_potential_positive=100, n_background=4096):
+		super(RingLoss, self).__init__()
+		self.t = t
+		self.n_background = n_background
+		self.n_potential_positive = n_potential_positive
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
+		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
+		hard_negatives_sim, hn_indices = points_sim.topk(k=self.n_background, dim=1, largest=True, sorted=True)
+		potential_positive_sim = hard_negatives_sim[:,:self.n_potential_positive]
+		total_positive_sim = positive_sim + potential_positive_sim.sum(dim=1)
+
+		return -(total_positive_sim/hard_negatives_sim.sum(dim=1) + 1e-7).log().mean(), similarities.detach()
+
+	def _exp(self, dot_prods):
+		# Z = 2876934.2 / 1281167 * self.data_len
+		return torch.exp(dot_prods / self.t)
+
+class AlternativeRingLoss(nn.Module):
+	def __init__(self, t, n_potential_positive=100, n_background=4096):
+		super(AlternativeRingLoss, self).__init__()
+		self.t = t
+		self.n_background = n_background
+		self.n_potential_positive = n_potential_positive
+		self.lastneighbour = False
+
+	def forward(self, points, point_indices, memory_bank):
+		norm_points = l2_normalize(points)
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
+		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
+		hard_negatives_sim, hn_indices = points_sim.topk(k=self.n_background, dim=1, largest=True, sorted=True)
+		potential_positive_sim = hard_negatives_sim[:,:self.n_potential_positive]
+		if not self.lastneighbour:
+			total_positive_sim = positive_sim + potential_positive_sim.sum(dim=1)
+			self.lastneighbour = True
+		else:
+			total_positive_sim = positive_sim 
+			self.lastneighbour = False
+
+		return -(total_positive_sim/hard_negatives_sim.sum(dim=1) + 1e-7).log().mean(), similarities.detach()
 
 	def _exp(self, dot_prods):
 		# Z = 2876934.2 / 1281167 * self.data_len
 		return torch.exp(dot_prods / self.t)
 
 class HardNegativePointLoss(nn.Module):
-	def __init__(self, t):
+	def __init__(self, t, n_background=4096):
 		super(HardNegativePointLoss, self).__init__()
 		self.t = t
+		self.n_background = n_background
 
 	def forward(self, points, point_indices, memory_bank):
 		norm_points = l2_normalize(points)
-		points_sim = self._exp(memory_bank.get_all_dot_products(norm_points))
+		similarities = memory_bank.get_all_dot_products(norm_points)
+		points_sim = self._exp(similarities)
 		positive_sim = points_sim[list(range(points_sim.size(0))), point_indices]
-		hard_negatives_sim, hn_indices = points_sim.topk(k=4096, dim=1, largest=True, sorted=True)
+		hard_negatives_sim, hn_indices = points_sim.topk(k=self.n_background, dim=1, largest=True, sorted=True)
 
-		return -(positive_sim/hard_negatives_sim.sum(dim=1) + 1e-7).log().mean()
+		return -(positive_sim/hard_negatives_sim.sum(dim=1) + 1e-7).log().mean(), similarities.detach()
 
 	def _exp(self, dot_prods):
 		# Z = 2876934.2 / 1281167 * self.data_len
