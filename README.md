@@ -4,15 +4,15 @@ This repository is the official implementation of [Unsupervised Learning by Inva
 
 <img src="img/graph.png" alt="" align=center />
 
-## Model Training
+## Pretraining on Natual Images
+### Train on ImageNet
 To train the model(s) in the paper, run this command:
 
-### ImageNet
-```train
+```
 python main.py --exp 'your_path' --n_background 4096 --t 0.2 --blur --cos --network 'resnet50' --nonlinearhead 1 --weight_decay 1e-4
 ```
 
-## Evaluation
+### Evaluation
 
 To evaluate the model on ImageNet, run:
 
@@ -23,15 +23,15 @@ python -m downstream.linear_classification.linear_classification --gpus '0,1' --
 Notice that in the paper, to calculate the BFS results, we require to record the id of neighbours of each anchor point. For computational efficiency, we apprximate the BFS results by only concatenating the neighbours of each point, up to L steps. This results may be a little different with the real BFS results due to there exists repeated samples, however it works pretty well, both effectively and efficiently.
 
 
-# Defect Classification
+## Pretraining on Defect Classification Dataset
 For validate the effectiveness and practicabilities of the proposed algorithms, we can also train and evaluate our method on Defect Detection Dataset.
 
-## Train on WM811.
+### Train on WM811.
 ```
 python main.py --exp 'your_path' --n_background 4096 --t 0.2 --cos --network 'resnet18_wm811' --dataset 'wm811' --nonlinearhead 1 --weight_decay 5e-4
 ```
 
-## Evaluation
+### Evaluation
 
 To evaluate the model on ImageNet, run:
 
