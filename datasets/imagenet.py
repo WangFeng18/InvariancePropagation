@@ -37,7 +37,7 @@ for path in DIR_LIST:
 		HUN_IMAGENET_DIR = path
 		break
 
-assert IMAGENET_DIR is not None
+# assert IMAGENET_DIR is not None
 
 class GaussianBlur(object):
 	"""Gaussian blur augmentation in SimCLR https://arxiv.org/abs/2002.05709"""

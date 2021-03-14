@@ -12,9 +12,11 @@ import numpy as np
 import datasets.cifar as cifar
 import datasets.svhn as svhn
 import datasets.imagenet as imagenet
+import datasets.wm811.loaders as wm811loader
 from models.alexnet import AlexNet
 from models.alexnet import AlexNet_cifar
 from models.resnet_cifar import ResNet18 as ResNet18_cifar
+from models.resnet_wm811 import ResNet18 as ResNet18_wm811
 from models.resnet_cifar import ResNet50 as ResNet50_cifar
 from models.resnet import resnet18, resnet50
 from models.preact_resnet import PreActResNet18
@@ -88,6 +90,8 @@ def main():
 		train_loader, val_loader, train_ordered_labels, train_dataset, val_dataset = imagenet.get_instance_dataloader(args)
 	elif args.dataset == 'svhn':
 		train_loader, val_loader, train_ordered_labels, train_dataset, val_dataset = svhn.get_dataloader(args)
+	elif args.dataset == 'wm811':
+		train_loader, val_loader, test_loader, train_dataset, val_dataset, test_dataset, train_ordered_labels = wm811loader.get_dataloader(args)
 
 	# create model
 	if args.network == 'alexnet':
@@ -96,6 +100,8 @@ def main():
 		network = AlexNet_cifar(128)
 	elif args.network == 'resnet18_cifar':
 		network = ResNet18_cifar(128, dropout=args.dropout, non_linear_head=args.nonlinearhead)
+	elif args.network == 'resnet18_wm811':
+		network = ResNet18_wm811(128, dropout=args.dropout, non_linear_head=args.nonlinearhead)
 	elif args.network == 'resnet50_cifar':
 		network = ResNet50_cifar(128, dropout=args.dropout)
 	elif args.network == 'wide_resnet28':
@@ -126,7 +132,7 @@ def main():
 	# create memory_bank
 	global writer
 	writer = SummaryWriter(comment='InvariancePropagation', logdir=os.path.join(args.exp, 'runs'))
-	memory_bank = objective.MemoryBank_v1(len(train_dataset), train_ordered_labels, writer, device, m=args.m)
+	memory_bank = objective.MemoryBank_v1(len(train_dataset), writer, device, m=args.m)
 
 	# create criterion
 	criterionA = objective.InvariancePropagationLoss(args.t, n_background=args.n_background, diffusion_layer=args.diffusion_layer, k=args.K_nearst, n_pos=args.n_pos, exclusive=args.exclusive, InvP=args.InvP, hard_pos=(not args.not_hardpos))

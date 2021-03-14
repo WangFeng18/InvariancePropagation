@@ -150,7 +150,7 @@ class InvariancePropagationLoss(nn.Module):
 		return torch.exp(dot_prods / self.t)
 
 class MemoryBank_v1(object):
-	def __init__(self, n_points, train_ordered_labels, writer, device, m=0.5):
+	def __init__(self, n_points, writer, device, m=0.5):
 		self.m = m
 		logging.info('M: {}'.format(self.m))
 		self.device = device
@@ -160,7 +160,6 @@ class MemoryBank_v1(object):
 		self.cluster_number = 0
 		self.point_centroid = None
 		self.writer = writer
-		self.train_ordered_labels = train_ordered_labels
 		self.k = 4
 		self.neigh = torch.zeros(n_points, self.k, dtype=torch.long).to(device).detach()
 		self.neigh_sim = torch.zeros(n_points, self.k).to(device).detach()
