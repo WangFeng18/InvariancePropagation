@@ -64,10 +64,15 @@ def get_dataloader(args):
         WM811K('./data/wm811k/labeled/test/', **data_kwargs),
     ])
 
-    train_ordered_labels = np.array([sample[1] for sample in train_set.samples])
-    train_loader = balanced_loader(train_set, args.batch_size, True, num_workers=args.num_workers)
-    val_loader = balanced_loader(valid_set, args.batch_size, True, num_workers=args.num_workers)
-    test_loader = balanced_loader(test_set, args.batch_size, True, num_workers=args.num_workers)
+    train_ordered_labels = np.array([sample[1] for sample in train_set.datasets[0].samples] + [sample[1] for sample in train_set.datasets[1].samples])
+
+    train_loader = DataLoader(train_set, args.batch_size, num_workers=args.n_workers, shuffle=True, pin_memory=False)
+    val_loader = DataLoader(valid_set, args.batch_size, num_workers=args.n_workers, shuffle=True, pin_memory=False)
+    test_loader = DataLoader(test_set, args.batch_size, num_workers=args.n_workers, shuffle=True, pin_memory=False)
+
+    # train_loader = balanced_loader(train_set, args.batch_size, True, num_workers=args.n_workers)
+    # val_loader = balanced_loader(valid_set, args.batch_size, True, num_workers=args.n_workers)
+    # test_loader = balanced_loader(test_set, args.batch_size, True, num_workers=args.n_workers)
     return train_loader, val_loader, test_loader, train_set, valid_set, test_set, train_ordered_labels
 
 
@@ -81,6 +86,7 @@ def get_linear_dataloader(args):
     valid_set = WM811K('./data/wm811k/labeled/valid/',
                        transform=test_transform,
                        decouple_input=config.decouple_input)
-    train_loader = balanced_loader(train_set, args.batch_size, True, num_workers=args.num_workers)
-    val_loader = balanced_loader(valid_set, args.batch_size, True, num_workers=args.num_workers)
+
+    train_loader = balanced_loader(train_set, args.batch_size, True, num_workers=args.n_workers)
+    val_loader = balanced_loader(valid_set, args.batch_size, True, num_workers=args.n_workers)
     return train_loader, val_loader
