@@ -33,7 +33,7 @@ python main.py --gpus '0,1,2' --exp 'output/' --n_background 4096 --t 0.2 --cos 
 
 ### Evaluation
 
-To evaluate the model on ImageNet, run:
+To evaluate the model on WM811, run:
 
 ```eval
 python -m downstream.linear_classification.eval_linear --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet18_wm811' --dataset 'wm811'
