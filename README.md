@@ -30,6 +30,8 @@ To train the model(s) in cifar10 and cifar100 or svhn, run this command:
 python main.py --exp 'your_path' -n_background 4096 --t 0.2 --blur --cos --network 'resnet18_cifar' --nonlinearhead 1 --weight_decay 5e-4 --n_pos 20 --dataset 'cifar10'
 # cifar100
 python main.py --exp 'your_path' -n_background 4096 --t 0.2 --blur --cos --network 'resnet18_cifar' --nonlinearhead 1 --weight_decay 5e-4 --n_pos 20 --dataset 'cifar100'
+# svhn
+python main.py --exp 'your_path' -n_background 4096 --t 0.2 --blur --cos --network 'resnet18_cifar' --nonlinearhead 1 --weight_decay 5e-4 --n_pos 20 --dataset 'svhn'
 ```
 
 ### Evaluation
@@ -40,6 +42,8 @@ To train the model(s) in cifar10 and cifar100 run this command:
 python -m downstream.linear_classification.eval_linear --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet18_cifar' --dataset 'cifar10'
 # cifar100
 python -m downstream.linear_classification.eval_linear --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet18_cifar' --dataset 'cifar100'
+# svhn
+python -m downstream.linear_classification.eval_linear --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet18_cifar' --dataset 'svhn'
 ```
 
 ## Pretraining on Defect Classification Dataset
