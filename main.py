@@ -167,6 +167,7 @@ def main():
 	try:
 		for i_epoch in range(start_epoch, args.max_epoch):
 			adjust_learning_rate(args.lr, args.lr_decay_steps, optimizer, i_epoch, lr_decay_rate=args.lr_decay_rate, cos=args.cos, max_epoch=args.max_epoch)
+			acc = kNN(i_epoch, network, memory_bank, val_loader, train_ordered_labels, K=200, sigma=0.07)
 			train(i_epoch, network, criterionA, optimizer, train_loader, device, memory_bank, ramp_up)
 
 			save_name = 'checkpoint.pth'
@@ -181,7 +182,7 @@ def main():
 
 			# scheduler.step()
 			# validate(network, memory_bank, val_loader, train_ordered_labels, device)
-			acc = kNN(i_epoch, network, memory_bank, val_loader, train_ordered_labels, K=200, sigma=0.07)
+			# acc = kNN(i_epoch, network, memory_bank, val_loader, train_ordered_labels, K=200, sigma=0.07)
 			if acc >= best_acc:
 				best_acc = acc
 				torch.save(checkpoint, os.path.join(args.exp, 'models', 'best.pth'))
@@ -253,6 +254,7 @@ def train(i_epoch, network, criterionA, optimizer, dataloader, device, memory_ba
 	logging.info('Epoch {}: L_inv: {:.4f}'.format(i_epoch, losses_inv.get()))
 
 def kNN(epoch, net, memory_bank, val_loader, train_ordered_labels, K=200, sigma=0.1):
+	print(train_ordered_labels)
 	net.eval()
 	total = 0
 	testsize = val_loader.dataset.__len__()

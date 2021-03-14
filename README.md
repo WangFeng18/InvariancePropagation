@@ -28,7 +28,7 @@ For validate the effectiveness and practicabilities of the proposed algorithms, 
 
 ### Train on WM811.
 ```
-python main.py --gpus '0,1,2' --exp 'output/' --n_background 4096 --t 0.2 --cos --network 'resnet18_wm811' --dataset 'wm811' --nonlinearhead 1 --weight_decay 5e-4
+python main.py --gpus '0,1,2' --exp 'output/' --n_background 4096 --t 0.07 --cos --network 'resnet18_wm811' --dataset 'wm811' --nonlinearhead 0 --weight_decay 5e-4
 ```
 
 ### Evaluation
