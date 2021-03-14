@@ -23,6 +23,8 @@ python -m downstream.linear_classification.linear_classification --gpus '0,1' --
 Notice that in the paper, to calculate the BFS results, we require to record the id of neighbours of each anchor point. For computational efficiency, we apprximate the BFS results by only concatenating the neighbours of each point, up to L steps. This results may be a little different with the real BFS results due to there exists repeated samples, however it works pretty well, both effectively and efficiently.
 
 ### Train on Cifar
+To train the model(s) in cifar10 and cifar100 or svhn, run this command:
+
 ```
 # cifar10
 python main.py --exp 'your_path' -n_background 4096 --t 0.2 --blur --cos --network 'resnet18_cifar' --nonlinearhead 1 --weight_decay 5e-4 --n_pos 20 --dataset 'cifar10'
@@ -31,6 +33,7 @@ python main.py --exp 'your_path' -n_background 4096 --t 0.2 --blur --cos --netwo
 ```
 
 ### Evaluation
+To train the model(s) in cifar10 and cifar100 run this command:
 
 ```eval
 # cifar10
