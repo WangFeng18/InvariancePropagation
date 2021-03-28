@@ -78,16 +78,19 @@ def get_dataloader(args):
 
 
 def get_linear_dataloader(args):
-    train_transform = WM811KTransform(size=config.input_size, mode='crop')
-    test_transform  = WM811KTransform(size=config.input_size, mode='test')
+    train_transform = WM811KTransform(size=96, mode='crop')
+    test_transform  = WM811KTransform(size=96, mode='test')
     train_set = WM811K('./data/wm811k/labeled/train/',
                        transform=train_transform,
-                       proportion=config.label_proportion,
-                       decouple_input=config.decouple_input)
+                       proportion=1.0,
+                       decouple_input=1)
     valid_set = WM811K('./data/wm811k/labeled/valid/',
                        transform=test_transform,
-                       decouple_input=config.decouple_input)
-
-    train_loader = balanced_loader(train_set, args.batch_size, True, num_workers=args.n_workers)
-    val_loader = balanced_loader(valid_set, args.batch_size, False, num_workers=args.n_workers)
-    return train_loader, val_loader
+                       decouple_input=1)
+    test_set = WM811K('./data/wm811k/labeled/test/',
+                       transform=test_transform,
+                       decouple_input=1)
+    train_loader = balanced_loader(train_set, args.batch_size, False, num_workers=args.n_workers)
+    val_loader = DataLoader(valid_set, args.batch_size, num_workers=args.n_workers, shuffle=True)
+    test_loader = DataLoader(test_set, args.batch_size, num_workers=args.n_workers, shuffle=True)
+    return train_loader, val_loader, test_loader

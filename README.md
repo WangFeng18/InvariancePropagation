@@ -59,6 +59,6 @@ python main.py --gpus '0,1,2' --exp 'output/' --n_background 4096 --t 0.07 --cos
 To evaluate the model on WM811, run:
 
 ```eval
-python -m downstream.linear_classification.eval_linear --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet18_wm811' --dataset 'wm811'
+python -m downstream.fine_tune_wm811 --save_folder 'your_output_folder' --model_path 'your_pretrain_model' --model 'resnet18_wm811' --dataset 'wm811' --weight_decay 1e-3 --learning_rate1 0.001 --learning_rate2 0.002 --label_smoothing 0.1 --dropout 0.5
 ```
 
