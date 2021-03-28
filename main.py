@@ -145,7 +145,7 @@ def main():
 		ramp_up = lambda i_epoch: 1
 
 	logging.info(beautify(args))
-	start_epoch = 0
+	start_epoch = 1
 	if args.resume_path != '':
 		logging.info('loading pretrained file from {}'.format(args.resume_path))
 		checkpoint = torch.load(args.resume_path)

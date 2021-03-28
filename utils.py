@@ -202,11 +202,15 @@ class AverageMeter(object):
 
 def adjust_learning_rate(lr, lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1, cos=False, max_epoch=800):
 	"""Decay the learning rate based on schedule"""
-	if cos:
-		lr *= 0.5 * (1. + math.cos(math.pi * epoch / max_epoch))
+	if step <= 10:
+		lr = lr * epoch / 10.
 	else:
-		steps = list(map(int, lr_decay_steps.split(',')))
-		for milestone in steps:
-			lr *= lr_decay_rate if epoch >= milestone else 1.
+		if cos:
+			epoch = epoch - 10
+			lr *= 0.5 * (1. + math.cos(math.pi * epoch / max_epoch))
+		else:
+			steps = list(map(int, lr_decay_steps.split(',')))
+			for milestone in steps:
+				lr *= lr_decay_rate if epoch >= milestone else 1.
 	for param_group in optimizer.param_groups:
 		param_group['lr'] = lr
