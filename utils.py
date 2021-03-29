@@ -202,7 +202,7 @@ class AverageMeter(object):
 
 def adjust_learning_rate(lr, lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1, cos=False, max_epoch=800):
 	"""Decay the learning rate based on schedule"""
-	if step <= 10:
+	if epoch <= 10:
 		lr = lr * epoch / 10.
 	else:
 		if cos:
