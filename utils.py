@@ -200,13 +200,13 @@ class AverageMeter(object):
 
 
 
-def adjust_learning_rate(lr, lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1, cos=False, max_epoch=800):
+def adjust_learning_rate(lr, lr_decay_steps, optimizer, epoch, lr_decay_rate=0.1, cos=False, max_epoch=800, warmup_epoch=0):
 	"""Decay the learning rate based on schedule"""
-	if epoch <= 10:
-		lr = lr * epoch / 10.
+	if epoch <= warmup_epoch:
+		lr = lr * epoch / warmup_epoch
 	else:
 		if cos:
-			epoch = epoch - 10
+			epoch = epoch - warmup_epoch
 			lr *= 0.5 * (1. + math.cos(math.pi * epoch / max_epoch))
 		else:
 			steps = list(map(int, lr_decay_steps.split(',')))
