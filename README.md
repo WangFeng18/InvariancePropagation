@@ -20,7 +20,7 @@ To evaluate the model on ImageNet, run:
 python -m downstream.linear_classification.linear_classification --gpus '0,1' --exp 'your_exp_path' --pretrained_path 'pretrain_path' --backbone 'resnet50'
 ```
 
-Notice that in the paper, to calculate the BFS results, we require to record the id of neighbours of each anchor point. For computational efficiency, we apprximate the BFS results by only concatenating the neighbours of each point, up to L steps. This results may be a little different with the real BFS results due to there exists repeated samples, however it works pretty well, both effectively and efficiently.
+Notice that in the paper, to calculate the BFS results, we require to record the id of neighbours of each anchor point. For computational efficiency, we apprximate the BFS results by only concatenating the neighbours of each point, up to L steps. This results may be a little different with the real BFS results due to there exists repeated samples, however it works pretty well, both effectively and efficiently. Pretrained model can be found [here](https://drive.google.com/file/d/1mE1WafTJbEdJav5wF98I_RvTksSxuRpU/view?usp=sharing).
 
 ### Train on Cifar
 To train the model(s) in cifar10 and cifar100 or svhn, run this command:
